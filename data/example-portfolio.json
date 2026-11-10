@@ -1,0 +1,13 @@
+{
+  "example": true,
+  "monthly": 1000000,
+  "band": 5,
+  "assets": [
+    { "name": "TIGER 미국S&P500", "ticker": "360750", "market": "KR", "qty": 520, "avg": 19850, "target": 35, "unit": 1 },
+    { "name": "KODEX 200", "ticker": "069500", "market": "KR", "qty": 180, "avg": 36400, "target": 15, "unit": 1 },
+    { "name": "QQQ", "ticker": "QQQ", "market": "US", "qty": 9, "avg": 498.2, "target": 20, "unit": 1 },
+    { "name": "SCHD", "ticker": "SCHD", "market": "US", "qty": 95, "avg": 26.9, "target": 10, "unit": 1 },
+    { "name": "KODEX 미국채10년선물", "ticker": "308620", "market": "KR", "qty": 210, "avg": 12100, "target": 10, "unit": 1 },
+    { "name": "비트코인", "ticker": "KRW-BTC", "market": "CRYPTO", "qty": 0.031, "avg": 118000000, "target": 10, "unit": 0.0001 }
+  ]
+}

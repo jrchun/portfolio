@@ -1,0 +1,22 @@
+[project]
+name = "rebalance-board"
+version = "0.1.0"
+description = "개인용 포트폴리오 리밸런싱 보드"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.uv]
+package = false

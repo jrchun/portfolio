@@ -1,0 +1,9 @@
+data/seed-portfolio.json
+data/seed-prices.json
+*.sqlite*
+.env
+.venv/
+__pycache__/
+data/seed-expected.json
+node_modules/
+.pytest_cache/
