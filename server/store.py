@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -60,13 +62,29 @@ class D1Store:
             raise SystemExit("환경 변수가 없습니다: " + ", ".join(missing))
         return cls(os.environ["CF_ACCOUNT_ID"], os.environ["CF_D1_DATABASE_ID"], os.environ["CLOUDFLARE_API_TOKEN"])
 
+    RETRY_WAITS = (5, 15, 30, 60)  # 속도 제한(429)·일시 오류(5xx) 때 기다릴 초
+
     def _post(self, body: dict) -> list[dict]:
-        req = urllib.request.Request(
-            self.url, data=json.dumps(body).encode(), method="POST",
-            headers={"Authorization": "Bearer " + self.token, "Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=30) as r:
-            out = json.loads(r.read().decode())
+        data = json.dumps(body).encode()
+        for attempt in range(len(self.RETRY_WAITS) + 1):
+            req = urllib.request.Request(
+                self.url, data=data, method="POST",
+                headers={"Authorization": "Bearer " + self.token, "Content-Type": "application/json"},
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    out = json.loads(r.read().decode())
+                break
+            except urllib.error.HTTPError as e:
+                if (e.code == 429 or e.code >= 500) and attempt < len(self.RETRY_WAITS):
+                    wait = self.RETRY_WAITS[attempt]
+                    try:
+                        wait = max(wait, int(e.headers.get("Retry-After") or 0))
+                    except ValueError:
+                        pass
+                    time.sleep(wait)
+                    continue
+                raise
         if not out.get("success"):
             raise RuntimeError(f"D1 오류: {out.get('errors')}")
         return out["result"]

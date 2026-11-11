@@ -172,3 +172,26 @@ def test_d1_store_sends_documented_query_shapes(monkeypatch):
     batch = sent[1][2]["batch"]
     assert batch[0]["params"] == ["005930", "2026-11-10", "197300.0", "KRW", "naver"]
     assert batch[1]["sql"].startswith("INSERT OR REPLACE INTO fx")
+
+
+def test_d1_store_retries_on_rate_limit(monkeypatch):
+    import urllib.error
+    from server import store as store_mod
+
+    calls = []
+
+    class Resp:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self): return json.dumps({"success": True, "result": [{"results": [], "success": True}]}).encode()
+
+    def flaky(req, timeout):
+        calls.append(1)
+        if len(calls) < 3:
+            raise urllib.error.HTTPError(req.full_url, 429, "Too Many Requests", {"Retry-After": "1"}, None)
+        return Resp()
+
+    monkeypatch.setattr(store_mod.urllib.request, "urlopen", flaky)
+    monkeypatch.setattr(store_mod.time, "sleep", lambda s: None)
+    assert store_mod.D1Store("a", "b", "t").query("SELECT 1") == []
+    assert len(calls) == 3

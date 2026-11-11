@@ -16,11 +16,11 @@ GitHub Actions (매일 07:30 KST) ── server/ 가격 수집기 ──▶ D1 R
 | # | 할 일 | 하는 곳 |
 |---|---|---|
 | 1 | `main` 브랜치 만들기, 저장소 기본 브랜치를 `main`으로 | GitHub |
-| 2 | Cloudflare API 토큰 만들기 (권한: Account › D1 › Edit) | Cloudflare 대시보드 › 내 프로필 › API 토큰 |
-| 3 | D1 데이터베이스 `rebalance-board` 만들기, 스키마·시드 넣기, `wrangler.toml`의 `database_id` 채우기 | API 토큰으로 처리 |
+| 2 | Cloudflare API 토큰 `rebalance-d1` 만들기 (권한: D1 Write) — 완료 | Cloudflare 대시보드 › Account API tokens |
+| 3 | D1 데이터베이스 `rebalance-board`(아시아·태평양) 만들기, 스키마·시드 넣기, `wrangler.toml`의 `database_id` 채우기 — 완료 (2026-11-11) | API 토큰으로 처리 |
 | 4 | Pages 프로젝트 만들기: Git 연결 › `jrchun/portfolio` › 프로덕션 브랜치 `main`, 빌드 명령 비움, 출력 폴더 `web` | Cloudflare 대시보드 › Workers 및 Pages |
 | 5 | Pages › 설정 › 변수 및 비밀 › 비밀 `WRITE_TOKEN`(편집 암호) 추가 후 다시 배포 | Cloudflare 대시보드 |
-| 6 | Actions 비밀 `CLOUDFLARE_API_TOKEN`(2의 토큰), 변수 `CF_ACCOUNT_ID`, `CF_D1_DATABASE_ID` | GitHub › Settings › Secrets and variables › Actions |
+| 6 | Actions 비밀 `CLOUDFLARE_API_TOKEN`(2의 토큰). 계정 ID·DB ID는 워크플로 파일에 적혀 있다 | GitHub › Settings › Secrets and variables › Actions |
 | 7 | Actions › fetch-prices › Run workflow로 한 번 실행해 로그 확인 | GitHub |
 
 `wrangler.toml`이 Pages 설정의 기준이다. 출력 폴더와 D1 연결은 이 파일에서 바꾸고, 대시보드에서는 같은 항목을 고칠 수 없다. 편집 암호처럼 비밀인 값만 대시보드에 둔다.

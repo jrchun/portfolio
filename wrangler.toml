@@ -8,4 +8,4 @@ send_metrics = false
 [[d1_databases]]
 binding = "DB"
 database_name = "rebalance-board"
-database_id = "__D1_DATABASE_ID__"
+database_id = "19a9b049-8612-4eb1-a692-98ba466aa4f1"
