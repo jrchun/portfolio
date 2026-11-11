@@ -19,12 +19,12 @@ Claude Code에서 이 폴더를 열고 다음과 같이 요청하면 된다.
 
 | 역할 | 위치 | 실행 곳 |
 |---|---|---|
-| 화면 | `web/` | Cloudflare Pages |
-| API (`/api/portfolio`, `/api/prices`) | `functions/` | Cloudflare Pages Functions |
+| 화면 | `web/` | Cloudflare Workers (정적 자산) |
+| API (`/api/portfolio`, `/api/prices`) | `src/` | Cloudflare Workers |
 | 저장 | `db/schema.sql` | Cloudflare D1 |
 | 매일 가격 수집 | `server/`, `.github/workflows/fetch-prices.yml` | GitHub Actions (07:30 KST) |
 
-- 읽기는 누구나 할 수 있다. 저장은 편집 암호(Pages 비밀값 `WRITE_TOKEN`)가 있어야 하고, 기기마다 처음 한 번 화면 아래 칸에 넣는다.
+- 읽기는 누구나 할 수 있다. 저장은 편집 암호(Worker 비밀값 `WRITE_TOKEN`)가 있어야 하고, 기기마다 처음 한 번 화면 아래 칸에 넣는다.
 - 배포 절차는 [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## 로컬에서 실행
@@ -33,7 +33,7 @@ Claude Code에서 이 폴더를 열고 다음과 같이 요청하면 된다.
 npx wrangler@4 d1 execute rebalance-board --local --file db/schema.sql
 python3 scripts/seed_sql.py > /tmp/seed.sql && npx wrangler@4 d1 execute rebalance-board --local --file /tmp/seed.sql
 echo 'WRITE_TOKEN=local-test-token' > .dev.vars
-npx wrangler@4 pages dev            # http://localhost:8788
+npx wrangler@4 dev                  # http://localhost:8787
 ```
 
 - 테스트: `uv run pytest` (가격 수집기) / `node --test tests/*.test.js` (계산·검색·가격 문서)

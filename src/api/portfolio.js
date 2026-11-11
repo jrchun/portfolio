@@ -1,6 +1,6 @@
 // GET /api/portfolio → {doc, version}
 // PUT /api/portfolio  {doc, version} → {version} | 409 {doc, version}(다른 기기에서 먼저 수정) | 401(편집 암호 없음)
-import { json, canWrite, logUsage, nowIso } from '../_lib/http.js';
+import { json, canWrite, logUsage, nowIso } from '../lib/http.js';
 
 const EMPTY = { monthly: 0, carry: 0, band: 5, groups: [], assets: [] };
 const MAX_BYTES = 256 * 1024;
@@ -10,14 +10,14 @@ async function current(env) {
   return row ? { doc: JSON.parse(row.doc), version: row.version } : { doc: EMPTY, version: 0 };
 }
 
-export async function onRequestGet({ request, env }) {
+export async function GET({ request, env }) {
   const body = await current(env);
   // 사용 기록은 본인(편집 암호를 가진 기기)이 열었을 때만 남긴다. 공개 방문은 세지 않는다.
   if (canWrite(request, env)) await logUsage(env, 'open');
   return json(body);
 }
 
-export async function onRequestPut({ request, env }) {
+export async function PUT({ request, env }) {
   if (!canWrite(request, env)) return json({ detail: '편집 암호가 필요합니다.' }, 401);
   const text = await request.text();
   if (text.length > MAX_BYTES) return json({ detail: '문서가 너무 큽니다.' }, 413);

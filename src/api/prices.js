@@ -1,8 +1,8 @@
 // GET /api/prices → 포트폴리오 종목의 최신 종가와 환율(요청서 4.2 형식)
-import { json } from '../_lib/http.js';
-import { buildPrices, todayKST } from '../_lib/prices.js';
+import { json } from '../lib/http.js';
+import { buildPrices, todayKST } from '../lib/prices.js';
 
-export async function onRequestGet({ env }) {
+export async function GET({ env }) {
   const [pf, latest, fx] = await env.DB.batch([
     env.DB.prepare('SELECT doc FROM portfolio WHERE id = 1'),
     env.DB.prepare(`SELECT q.ticker, q.date, q.close, q.source FROM quotes q

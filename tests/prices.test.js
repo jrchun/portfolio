@@ -1,7 +1,7 @@
-// /api/prices가 쓰는 가격 문서 만들기(functions/_lib/prices.js)
+// /api/prices가 쓰는 가격 문서 만들기(src/lib/prices.js)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPrices, businessDaysSince, todayKST } from '../functions/_lib/prices.js';
+import { buildPrices, businessDaysSince, todayKST } from '../src/lib/prices.js';
 
 test('평일 수: 금요일 종가를 화요일에 보면 월요일 하루', () => {
   assert.equal(businessDaysSince('2026-11-06', '2026-11-10'), 1);

@@ -1,9 +1,14 @@
-# Cloudflare Pages 설정. 이 파일이 Pages 프로젝트 설정의 기준이다(대시보드에서는 같은 항목을 고칠 수 없다).
-# 편집 암호(WRITE_TOKEN)는 비밀값이라 여기 두지 않고 Pages 대시보드 > 설정 > 변수 및 비밀에서 넣는다.
+# Cloudflare Worker 설정(이 파일이 기준이다). 대시보드의 Worker 이름과 name이 같아야 한다.
+# 편집 암호(WRITE_TOKEN)는 비밀값이라 여기 두지 않고 대시보드 > Worker > 설정 > 변수 및 비밀에서 넣는다.
 name = "rebalance-board"
-pages_build_output_dir = "./web"
+main = "./src/worker.js"
 compatibility_date = "2026-11-01"
 send_metrics = false
+
+# 정적 파일. 요청과 맞는 파일이 있으면 Worker를 거치지 않고 바로 보낸다.
+[assets]
+directory = "./web"
+binding = "ASSETS"
 
 [[d1_databases]]
 binding = "DB"
