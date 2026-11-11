@@ -73,7 +73,11 @@ def test_prices_only_for_portfolio_tickers(client):
         "asOf": "2026-01-02",
         "fx": 1400.5,
         # 종목 키는 대문자. 12/31은 기준일(1/2)보다 뒤일 수 없으므로 지난해 날짜로 저장된다.
-        "quotes": {"111111": {"close": 1200, "date": "01/02"}, "ABC": {"close": 12.5, "date": "12/31"}},
+        # 시드 날짜가 오늘보다 3영업일 넘게 지났으므로 오래된 종가로 표시된다.
+        "quotes": {
+            "111111": {"close": 1200, "date": "01/02", "stale": True},
+            "ABC": {"close": 12.5, "date": "12/31", "stale": True},
+        },
     }
     conn = db.connect()
     rows = {r["ticker"]: (r["date"], r["currency"]) for r in conn.execute("SELECT * FROM quotes")}

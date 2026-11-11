@@ -141,6 +141,7 @@ export function computeBoard(state, prices) {
   const uv = units.map(u => u.val), uw = units.map(u => u.w);
 
   const missing = A.filter(a => a.market !== 'CASH' && !quote(a));
+  const stale = A.filter(a => a.market !== 'CASH' && quote(a)?.stale);
   const needFx = A.some(isUSD) && !fx();
 
   const cur = vals.map(v => T ? v / T * 100 : 0);
@@ -163,7 +164,7 @@ export function computeBoard(state, prices) {
   return {
     px, A, EXA, exVal, vals, cost, T, TC, C, band, carry, budget,
     units, live, byG, tSum, loose, uv, uw,
-    missing, needFx, cur, uDrift, md, mdIdx, pl, status, months,
+    missing, stale, needFx, cur, uDrift, md, mdIdx, pl, status, months,
     UA, plan, after, T2, md2, annual,
   };
 }

@@ -41,6 +41,7 @@ function renderBoard() {
     : '<span>가격 정보가 아직 없습니다</span>';
   const warns = [];
   if (b.missing.length) warns.push(`가격을 찾지 못한 자산은 평균단가로 계산했습니다: ${b.missing.map(a => esc(a.name || a.ticker || '이름 없음')).join(', ')}.`);
+  if (b.stale.length) warns.push(`종가가 3영업일 넘게 갱신되지 않은 자산이 있습니다: ${b.stale.map(a => esc(a.name || a.ticker)).join(', ')}. 가격 새로고침으로 다시 받아 보세요.`);
   if (b.needFx) warns.push('환율 정보가 없어 미국 자산 평가액을 계산할 수 없습니다.');
   if (loose.length) warns.push(`그룹에 넣지 않은 종목은 목표 비중 0%로 계산됩니다: ${loose.map(u => esc(u.label)).join(', ')}. 포트폴리오 탭에서 그룹을 지정해 주세요.`);
   $('priceWarn').hidden = !warns.length; $('priceWarn').innerHTML = warns.join('<br>');
@@ -347,6 +348,26 @@ $('manualBtn').addEventListener('click', () => {
   state.assets.push({ name: $('q').value.trim() || '새 자산', ticker: '', market: 'KR', qty: 0, avg: 0, target: 0, unit: 1, manual: true });
   $('q').value = ''; renderResults(); changed(true);
   focusAsset(state.assets.length - 1, 'k');
+});
+
+/* ---------- 가격 새로고침 ---------- */
+$('refreshBtn').addEventListener('click', async () => {
+  const btn = $('refreshBtn'), note = $('refreshNote');
+  btn.disabled = true; btn.textContent = '가져오는 중…';
+  try {
+    const r = await api.refreshPrices();
+    setPrices(r.prices);
+    if (state) { renderBoard(); refreshAssetMeta(); renderTargetMeta(); writeCache(); }
+    const failed = r.failed.map(f => esc(f.name || f.ticker));
+    note.innerHTML = (failed.length
+      ? `가격을 새로 받았습니다. 받지 못한 자산은 직전 종가를 그대로 씁니다: ${failed.join(', ')}.`
+      : `가격을 새로 받았습니다(<span class="num">${r.updated.length}</span>개 자산).`)
+      + (r.fx ? '' : ' 환율은 받지 못해 직전 값을 씁니다.');
+  } catch (e) {
+    note.textContent = '가격 서버에 연결하지 못했습니다. 직전 가격을 그대로 씁니다.';
+  }
+  note.hidden = false;
+  btn.disabled = false; btn.textContent = '가격 새로고침';
 });
 
 /* ---------- 탭 ---------- */

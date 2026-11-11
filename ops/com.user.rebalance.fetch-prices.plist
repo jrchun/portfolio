@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  매일 07:30(맥미니 시스템 시간대 기준, 서울로 맞춰 둘 것) 가격 수집.
+  직접 복사하지 말고 ops/install-launchd.sh로 설치한다. __REPO__, __UV__를 실제 경로로 바꿔 넣는다.
+  맥이 잠자기 중이었다면 깨어날 때 한 번 실행된다.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.user.rebalance.fetch-prices</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__UV__</string>
+    <string>run</string>
+    <string>--project</string>
+    <string>__REPO__</string>
+    <string>python</string>
+    <string>-m</string>
+    <string>server.jobs.fetch_prices</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO__</string>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>7</integer>
+    <key>Minute</key>
+    <integer>30</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>__REPO__/logs/fetch-prices.log</string>
+  <key>StandardErrorPath</key>
+  <string>__REPO__/logs/fetch-prices.log</string>
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>

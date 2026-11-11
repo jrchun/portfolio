@@ -24,8 +24,12 @@
         <button class="tab" role="tab" id="tab-portfolio" aria-controls="portfolio" type="button">포트폴리오</button>
         <button class="tab" role="tab" id="tab-holdings" aria-controls="holdings" type="button">보유 자산</button>
       </div>
-      <div class="priceline" id="priceLine"></div>
+      <div class="row">
+        <div class="priceline" id="priceLine"></div>
+        <button class="refresh" id="refreshBtn" type="button">가격 새로고침</button>
+      </div>
     </div>
+    <p class="hint" id="refreshNote" role="status" aria-live="polite" hidden></p>
   </header>
 
   <!-- 대시보드 -->

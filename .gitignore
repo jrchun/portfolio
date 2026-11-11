@@ -7,3 +7,4 @@ __pycache__/
 data/seed-expected.json
 node_modules/
 .pytest_cache/
+logs/

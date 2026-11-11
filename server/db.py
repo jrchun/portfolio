@@ -10,9 +10,11 @@ import re
 import sqlite3
 from datetime import date, datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
+KST = ZoneInfo("Asia/Seoul")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS portfolio (
@@ -170,8 +172,26 @@ def put_portfolio(conn: sqlite3.Connection, doc: dict, version: int) -> int | No
 
 # ---------- 가격 ----------
 
-def latest_prices(conn: sqlite3.Connection, doc: dict) -> dict:
-    """포트폴리오 종목의 최신 종가와 환율(요청서 4.2 형식)."""
+STALE_BUSINESS_DAYS = 3
+
+
+def business_days_since(day: date, today: date) -> int:
+    """day 다음 날부터 어제까지의 평일 수. 공휴일은 따로 빼지 않는다."""
+    n, d = 0, day
+    while True:
+        d = date.fromordinal(d.toordinal() + 1)
+        if d >= today:
+            return n
+        if d.weekday() < 5:
+            n += 1
+
+
+def latest_prices(conn: sqlite3.Connection, doc: dict, today: date | None = None) -> dict:
+    """포트폴리오 종목의 최신 종가와 환율(요청서 4.2 형식).
+
+    종가가 3영업일 넘게 갱신되지 않은 종목에는 `"stale": true`를 붙인다.
+    """
+    today = today or datetime.now(KST).date()
     quotes: dict[str, dict] = {}
     dates: list[str] = []
     example = False
@@ -184,6 +204,8 @@ def latest_prices(conn: sqlite3.Connection, doc: dict) -> dict:
         if not row:
             continue
         quotes[key] = {"close": row["close"], "date": f"{row['date'][5:7]}/{row['date'][8:10]}"}
+        if business_days_since(date.fromisoformat(row["date"]), today) > STALE_BUSINESS_DAYS:
+            quotes[key]["stale"] = True
         dates.append(row["date"])
         example = example or row["source"] == "example"
     out: dict = {"asOf": max(dates) if dates else None, "fx": None, "quotes": quotes}

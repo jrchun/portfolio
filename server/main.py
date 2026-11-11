@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import db
+from .prices import collect
 
 WEB_DIR = db.ROOT / "web"
 SYMBOLS = db.ROOT / "data" / "symbols.json"
@@ -71,6 +72,14 @@ def put_portfolio(body: PortfolioIn, conn=Depends(get_conn)):
 def get_prices(conn=Depends(get_conn)):
     doc, _ = db.get_portfolio(conn)
     return JSONResponse(db.latest_prices(conn, doc), headers=NO_STORE)
+
+
+@app.post("/api/prices/refresh")
+def refresh_prices(conn=Depends(get_conn)):
+    """가격 수집을 지금 실행한다. 결과(성공·실패 종목)와 갱신된 가격 문서를 돌려준다."""
+    result = collect.run(conn)
+    doc, _ = db.get_portfolio(conn)
+    return JSONResponse({**result, "prices": db.latest_prices(conn, doc)}, headers=NO_STORE)
 
 
 @app.get("/api/symbols")

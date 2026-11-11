@@ -97,3 +97,16 @@ test('1월 리밸런싱: 대표형 그룹은 sell 종목부터 팔고 보유 수
   assert.deepEqual({ q: c.q, s: c.s }, { q: 196, s: 1 });
   assert.equal(b.annual.usGain, 1 * (10 - 5) * 1000);
 });
+
+test('3영업일 넘게 갱신되지 않은 종가는 stale 목록에 들어간다(현금 제외)', () => {
+  const doc = {
+    monthly: 0, band: 5, groups: [],
+    assets: [
+      { name: 'X', ticker: 'X', market: 'KR', qty: 1, avg: 1, unit: 1 },
+      { name: 'Y', ticker: 'Y', market: 'KR', qty: 1, avg: 1, unit: 1 },
+      { name: '현금', ticker: 'C', market: 'CASH', qty: 1, avg: 1, unit: 1 },
+    ],
+  };
+  const b = computeBoard(doc, { quotes: { X: { close: 1, date: '11/01', stale: true }, Y: { close: 1, date: '11/10' }, C: { close: 1, stale: true } } });
+  assert.deepEqual(b.stale.map(a => a.name), ['X']);
+});
