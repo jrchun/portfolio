@@ -1,4 +1,4 @@
-"""포트폴리오 종목의 종가와 환율을 모아 DB에 저장한다.
+"""포트폴리오 종목의 종가와 환율을 모아 저장소(D1 또는 SQLite)에 저장한다.
 
 - 포트폴리오에 있는 종목만 수집한다. CASH는 수집하지 않는다.
 - 시장별 수집기 하나가 통째로 실패해도 나머지 시장은 저장한다. 실패 종목은 직전 종가를 그대로 둔다.
@@ -6,12 +6,11 @@
 """
 from __future__ import annotations
 
-import sqlite3
 import threading
 from datetime import datetime
 from typing import Callable
 
-from .. import db
+from ..store import key_of
 from . import _common, crypto, fx, gold, kr, us
 
 FETCHERS: dict[str, Callable] = {"KR": kr.fetch, "US": us.fetch, "GOLD": gold.fetch, "CRYPTO": crypto.fetch}
@@ -19,16 +18,16 @@ CURRENCY = {"US": "USD"}
 _lock = threading.Lock()
 
 
-def run(conn: sqlite3.Connection, fetchers: dict | None = None, fx_fetch: Callable | None = None,
+def run(store, fetchers: dict | None = None, fx_fetch: Callable | None = None,
         now: datetime | None = None) -> dict:
     fetchers = FETCHERS if fetchers is None else fetchers
     fx_fetch = fx.fetch if fx_fetch is None else fx_fetch
     now = now or _common.now_kst()
     with _lock:
-        doc, _ = db.get_portfolio(conn)
+        doc = store.get_doc()
         by_market: dict[str, dict[str, str]] = {}
         for a in doc.get("assets", []):
-            key, market = db.key_of(a), a.get("market")
+            key, market = key_of(a), a.get("market")
             if key and market in fetchers:
                 by_market.setdefault(market, {})[key] = a.get("name") or key
 
@@ -53,12 +52,7 @@ def run(conn: sqlite3.Connection, fetchers: dict | None = None, fx_fetch: Callab
         except Exception as e:
             rate, errors["FX"] = None, f"{type(e).__name__}: {e}"[:200]
 
-        with conn:
-            conn.executemany(
-                "INSERT OR REPLACE INTO quotes (ticker, date, close, currency, source) VALUES (?, ?, ?, ?, ?)", rows
-            )
-            if rate:
-                conn.execute("INSERT OR REPLACE INTO fx (date, usdkrw, source) VALUES (?, ?, ?)", rate)
+        store.save(rows, tuple(rate) if rate else None)
 
         return {
             "ranAt": now.isoformat(timespec="seconds"),

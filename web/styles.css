@@ -122,9 +122,12 @@ button.primary{background:var(--accent);border-color:var(--accent);color:var(--s
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .row.between{justify-content:space-between}
 .head{display:flex;flex-direction:column;gap:12px}
+.foot{display:flex;flex-direction:column;gap:8px}
 #saveState{min-height:1.3em}
-.refresh{min-height:38px}
-.refresh:disabled{cursor:wait;color:var(--muted)}
+.token{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.token label{font-size:.78rem;color:var(--muted);font-weight:500}
+.token input{flex:1 1 160px;width:auto}
+.token button{min-height:38px}
 .warnline{color:var(--bad);font-size:.84rem;font-weight:500}
 .example{font-size:.72rem;font-weight:600;color:var(--warn);background:var(--warn-soft);padding:2px 8px;border-radius:4px}
 @media (prefers-reduced-motion:no-preference){.fill,.tick{transition:width .25s ease,left .25s ease}}

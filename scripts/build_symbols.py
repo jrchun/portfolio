@@ -1,6 +1,6 @@
-"""data/symbols.json 재생성 스크립트 (종목 검색용 목록).
+"""web/symbols.json 재생성 스크립트 (종목 검색용 목록).
 
-사용법: python3 scripts/build_symbols.py <원본 폴더> data/symbols.json
+사용법: python3 scripts/build_symbols.py <원본 폴더> web/symbols.json
 원본 폴더에 아래 자료를 미리 받아 둔다.
   reg/  ← git clone https://github.com/pon00050/kr-company-registry   (국내 상장사: data/dist/kr_corp_ids.csv)
   ds/   ← git clone https://github.com/gottso/darren-scan              (kr_etfs.csv, us_etfs.csv)

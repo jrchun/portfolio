@@ -1,4 +1,4 @@
-// 종목 검색. data/symbols.json의 각 행은
+// 종목 검색. web/symbols.json의 각 행은
 // [코드, 이름, 상장구분, 시가총액(억원), 별칭('|' 구분), 보조순위, 자산군] 이다.
 
 export const norm = t => String(t).toLowerCase().replace(/[\s\-_.()&]/g, '');

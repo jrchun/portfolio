@@ -1,0 +1,11 @@
+# Cloudflare Pages 설정. 이 파일이 Pages 프로젝트 설정의 기준이다(대시보드에서는 같은 항목을 고칠 수 없다).
+# 편집 암호(WRITE_TOKEN)는 비밀값이라 여기 두지 않고 Pages 대시보드 > 설정 > 변수 및 비밀에서 넣는다.
+name = "rebalance-board"
+pages_build_output_dir = "./web"
+compatibility_date = "2026-11-01"
+send_metrics = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rebalance-board"
+database_id = "__D1_DATABASE_ID__"

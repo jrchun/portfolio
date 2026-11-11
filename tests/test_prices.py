@@ -4,8 +4,8 @@ from datetime import date, datetime
 
 import pytest
 
-from server import db
 from server.prices import _common, collect, crypto, gold, kr, us
+from server.store import SqliteStore
 
 KST = _common.KST
 
@@ -77,13 +77,6 @@ def test_kr_falls_back_to_yfinance_only_when_naver_has_nothing(monkeypatch):
     }
 
 
-def test_business_days_since():
-    # 금요일 종가를 화요일에 보면 그 사이 평일은 월요일 하루
-    assert db.business_days_since(date(2026, 11, 6), date(2026, 11, 10)) == 1
-    assert db.business_days_since(date(2026, 11, 10), date(2026, 11, 11)) == 0
-    assert db.business_days_since(date(2026, 11, 4), date(2026, 11, 11)) == 4
-
-
 DOC = {
     "monthly": 0, "band": 5, "groups": [],
     "assets": [
@@ -97,15 +90,18 @@ DOC = {
 
 
 @pytest.fixture
-def conn(tmp_path):
-    c = db.connect(tmp_path / "t.sqlite")
-    c.executescript(db.SCHEMA)
-    c.execute("INSERT INTO portfolio (id, doc, version, updated_at) VALUES (1, ?, 1, 'x')", (json.dumps(DOC),))
+def store(tmp_path):
+    st = SqliteStore(tmp_path / "t.sqlite")
+    st.conn.execute("INSERT INTO portfolio (id, doc, version, updated_at) VALUES (1, ?, 1, 'x')", (json.dumps(DOC),))
     # 미국 종목의 직전 종가
-    c.execute("INSERT INTO quotes VALUES ('QQQM', '2026-11-06', 270.22, 'USD', 'yfinance')")
-    c.commit()
-    yield c
-    c.close()
+    st.conn.execute("INSERT INTO quotes VALUES ('QQQM', '2026-11-06', 270.22, 'USD', 'yfinance')")
+    st.conn.commit()
+    yield st
+    st.close()
+
+
+def latest(st, ticker):
+    return st.query("SELECT date, close FROM quotes WHERE ticker = ? ORDER BY date DESC LIMIT 1", (ticker,))[0]
 
 
 def ok(prices):
@@ -116,10 +112,10 @@ def boom(tickers, now):
     raise ConnectionError("blocked")
 
 
-def test_one_market_blocked_others_still_saved(conn):
+def test_one_market_blocked_others_still_saved(store):
     """출처 하나를 일부러 막아도 나머지는 갱신되고, 막힌 종목은 직전 종가를 유지한다."""
     now = kst(2026, 11, 11, 7, 30)
-    r = collect.run(conn, fetchers={
+    r = collect.run(store, fetchers={
         "KR": ok({"005930": ("2026-11-10", 197300)}),
         "US": boom,
         "GOLD": ok({"M04020000": ("2026-11-10", 177290)}),
@@ -128,18 +124,15 @@ def test_one_market_blocked_others_still_saved(conn):
     assert sorted(u["ticker"] for u in r["updated"]) == ["005930", "KRW-BTC", "M04020000"]
     assert [f["ticker"] for f in r["failed"]] == ["QQQM"]
     assert "US" in r["errors"]
-    p = db.latest_prices(conn, DOC, today=date(2026, 11, 11))
-    assert p["quotes"]["005930"] == {"close": 197300, "date": "11/10"}
-    assert p["quotes"]["QQQM"] == {"close": 270.22, "date": "11/06"}  # 직전 종가 유지, 아직 3영업일 이내
-    assert p["fx"] == 1342.07
-    assert "CASH-1" not in p["quotes"]
-    # 그대로 며칠 지나면 오래된 종가로 표시된다
-    assert db.latest_prices(conn, DOC, today=date(2026, 11, 13))["quotes"]["QQQM"]["stale"] is True
+    assert latest(store, "005930") == {"date": "2026-11-10", "close": 197300}
+    assert latest(store, "QQQM") == {"date": "2026-11-06", "close": 270.22}  # 직전 종가 유지
+    assert store.query("SELECT usdkrw FROM fx") == [{"usdkrw": 1342.07}]
+    assert store.query("SELECT COUNT(*) AS n FROM quotes WHERE ticker = 'CASH-1'") == [{"n": 0}]
 
 
-def test_fx_failure_keeps_previous_rate_and_rerun_is_idempotent(conn):
-    conn.execute("INSERT INTO fx VALUES ('2026-11-09', 1362.7, 'test')")
-    conn.commit()
+def test_fx_failure_keeps_previous_rate_and_rerun_is_idempotent(store):
+    store.conn.execute("INSERT INTO fx VALUES ('2026-11-09', 1362.7, 'test')")
+    store.conn.commit()
     fetchers = {m: ok({}) for m in ("KR", "US", "GOLD", "CRYPTO")}
     fetchers["KR"] = ok({"005930": ("2026-11-10", 197300)})
 
@@ -147,7 +140,35 @@ def test_fx_failure_keeps_previous_rate_and_rerun_is_idempotent(conn):
         raise TimeoutError()
 
     for _ in range(2):  # 주말처럼 새 값이 없을 때 다시 돌려도 같은 행을 덮어쓸 뿐이다
-        r = collect.run(conn, fetchers=fetchers, fx_fetch=fx_boom, now=kst(2026, 11, 11, 7, 30))
+        r = collect.run(store, fetchers=fetchers, fx_fetch=fx_boom, now=kst(2026, 11, 11, 7, 30))
     assert r["fx"] is None and "FX" in r["errors"]
-    assert conn.execute("SELECT COUNT(*) FROM quotes WHERE ticker='005930'").fetchone()[0] == 1
-    assert db.latest_prices(conn, DOC, today=date(2026, 11, 11))["fx"] == 1362.7
+    assert store.query("SELECT COUNT(*) AS n FROM quotes WHERE ticker = '005930'") == [{"n": 1}]
+    assert store.query("SELECT usdkrw FROM fx") == [{"usdkrw": 1362.7}]
+
+
+def test_d1_store_sends_documented_query_shapes(monkeypatch):
+    """D1 REST: 단일 {sql, params}, 여러 문장 {batch: [...]}. params는 문자열."""
+    from server import store as store_mod
+
+    sent = []
+
+    class Resp:
+        def __init__(self, body): self.body = body
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self): return json.dumps(self.body).encode()
+
+    def fake_urlopen(req, timeout):
+        sent.append((req.full_url, req.get_header("Authorization"), json.loads(req.data)))
+        return Resp({"success": True, "result": [{"results": [{"doc": json.dumps(DOC)}], "success": True}]})
+
+    monkeypatch.setattr(store_mod.urllib.request, "urlopen", fake_urlopen)
+    st = store_mod.D1Store("acc", "dbid", "tok")
+    assert st.get_doc() == DOC
+    st.save([("005930", "2026-11-10", 197300.0, "KRW", "naver")], ("2026-11-10", 1342.07, "yfinance"))
+    url, auth, body = sent[0]
+    assert url == "https://api.cloudflare.com/client/v4/accounts/acc/d1/database/dbid/query"
+    assert auth == "Bearer tok" and body == {"sql": "SELECT doc FROM portfolio WHERE id = 1", "params": []}
+    batch = sent[1][2]["batch"]
+    assert batch[0]["params"] == ["005930", "2026-11-10", "197300.0", "KRW", "naver"]
+    assert batch[1]["sql"].startswith("INSERT OR REPLACE INTO fx")

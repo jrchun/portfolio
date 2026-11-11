@@ -237,8 +237,14 @@ async function flush() {
   const body = JSON.parse(JSON.stringify(state));
   try {
     const r = await api.putPortfolio(body, version);
-    if (r.ok) { version = r.version; setSaveState('저장됨'); writeCache(); }
-    else {
+    if (r.ok) { version = r.version; setSaveState('저장됨'); writeCache(); $('tokenForm').hidden = true; }
+    else if (r.unauthorized) {
+      // 수정 내용은 화면에 남겨 두고, 암호를 넣으면 그대로 저장한다.
+      saving = false; dirtyAgain = false;
+      setSaveState(api.getToken() ? '편집 암호가 맞지 않아 저장하지 못했습니다. 다시 입력해 주세요.' : '저장하려면 편집 암호를 입력하세요. 이 기기에서는 한 번만 넣으면 됩니다.');
+      $('tokenForm').hidden = false;
+      return;
+    } else {
       // 충돌: 내 수정은 버리고 최신 문서로 바꾼다.
       clearTimeout(saveTimer); dirtyAgain = false; pendingLocal = false; saving = false;
       version = r.version; applyPortfolio(r.doc, true); writeCache();
@@ -350,24 +356,10 @@ $('manualBtn').addEventListener('click', () => {
   focusAsset(state.assets.length - 1, 'k');
 });
 
-/* ---------- 가격 새로고침 ---------- */
-$('refreshBtn').addEventListener('click', async () => {
-  const btn = $('refreshBtn'), note = $('refreshNote');
-  btn.disabled = true; btn.textContent = '가져오는 중…';
-  try {
-    const r = await api.refreshPrices();
-    setPrices(r.prices);
-    if (state) { renderBoard(); refreshAssetMeta(); renderTargetMeta(); writeCache(); }
-    const failed = r.failed.map(f => esc(f.name || f.ticker));
-    note.innerHTML = (failed.length
-      ? `가격을 새로 받았습니다. 받지 못한 자산은 직전 종가를 그대로 씁니다: ${failed.join(', ')}.`
-      : `가격을 새로 받았습니다(<span class="num">${r.updated.length}</span>개 자산).`)
-      + (r.fx ? '' : ' 환율은 받지 못해 직전 값을 씁니다.');
-  } catch (e) {
-    note.textContent = '가격 서버에 연결하지 못했습니다. 직전 가격을 그대로 씁니다.';
-  }
-  note.hidden = false;
-  btn.disabled = false; btn.textContent = '가격 새로고침';
+$('tokenForm').addEventListener('submit', e => {
+  e.preventDefault();
+  api.setToken($('tokenIn').value.trim()); $('tokenIn').value = '';
+  $('tokenForm').hidden = true; setSaveState('저장 중…'); flush();
 });
 
 /* ---------- 탭 ---------- */

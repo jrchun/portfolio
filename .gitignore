@@ -8,3 +8,5 @@ data/seed-expected.json
 node_modules/
 .pytest_cache/
 logs/
+.wrangler/
+.dev.vars

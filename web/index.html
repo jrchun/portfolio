@@ -24,12 +24,8 @@
         <button class="tab" role="tab" id="tab-portfolio" aria-controls="portfolio" type="button">포트폴리오</button>
         <button class="tab" role="tab" id="tab-holdings" aria-controls="holdings" type="button">보유 자산</button>
       </div>
-      <div class="row">
-        <div class="priceline" id="priceLine"></div>
-        <button class="refresh" id="refreshBtn" type="button">가격 새로고침</button>
-      </div>
+      <div class="priceline" id="priceLine"></div>
     </div>
-    <p class="hint" id="refreshNote" role="status" aria-live="polite" hidden></p>
   </header>
 
   <!-- 대시보드 -->
@@ -126,7 +122,14 @@
     </section>
   </div>
 
-  <footer class="hint" id="saveState" role="status" aria-live="polite"></footer>
+  <footer class="foot">
+    <span class="hint" id="saveState" role="status" aria-live="polite"></span>
+    <form class="token" id="tokenForm" hidden>
+      <label for="tokenIn">편집 암호</label>
+      <input id="tokenIn" type="password" autocomplete="current-password" required>
+      <button class="primary" type="submit">확인</button>
+    </form>
+  </footer>
 </div>
 <script type="module" src="js/app.js"></script>
 </body>
